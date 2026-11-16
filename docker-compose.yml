@@ -1,0 +1,47 @@
+# ThreatMonitor: OPNsense syslog in on 5514 (udp+tcp), the globe dashboard out on 5116.
+# Compose is read from /srv/threatmonitor/ (deploy.sh and install/install.sh put the files there). Settings in
+# /srv/threatmonitor/.env (see .env.example), which compose also reads for ${TZ} and ${TM_DNS} below.
+
+services:
+  threatmonitor:
+    build: .
+    image: threatmonitor-app:latest
+    container_name: threatmonitor
+    restart: unless-stopped
+    init: true                          # a PID 1 that reaps finished child processes
+    user: "1000:1000"                   # not root: it reads text written by attackers. data/ must be
+                                        # owned by 1000:1000 (sudo chown -R 1000:1000 /srv/threatmonitor/data)
+    stop_grace_period: 30s              # time for the last history write and the state save
+    ports:
+      - "5116:5116"                     # dashboard
+      - "5514:5514/udp"                 # syslog from OPNsense
+      - "5514:5514/tcp"
+    env_file:
+      - path: .env                      # TM_SYSLOG_ALLOW, TM_DASHBOARD_URL, TM_RULES, ... (.env.example)
+        required: false
+    volumes:
+      - /srv/threatmonitor/code:/home/app/projects/threatmonitor:ro   # the source (bind-mount, read-only)
+      - /srv/threatmonitor/data:/home/app/data                      # GeoIP databases + today's counters
+    working_dir: /home/app/projects/threatmonitor
+    environment:
+      TZ: ${TZ:-UTC}                    # with tzdata in the image; the day's counts start again at its midnight
+      HOME: /home/app
+      TM_DATA_DIR: /home/app/data
+      TM_HTTP_PORT: "5116"
+      TM_SYSLOG_PORT: "5514"
+    dns:                                # explicit, for a host on systemd-resolved (127.0.0.53, which a container
+      - "${TM_DNS:-1.1.1.1}"            # can't reach): TM_DNS (your router) first, public resolvers after it
+      - 1.1.1.1
+      - 8.8.8.8
+    command: ["python3", "-m", "threatmonitor"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:5116/healthz"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:                            # Docker keeps at most 3 x 10 MB of its log
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

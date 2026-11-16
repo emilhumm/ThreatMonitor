@@ -1,0 +1,14 @@
+# /etc/systemd/system/threatmonitor-backup.timer
+# Nightly at 04:00 local - late, so it comes after other backups to the same share rather than fighting them for
+# it. Persistent=true catches up on a run missed while the box was off.
+
+[Unit]
+Description=ThreatMonitor - nightly backup timer
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+Unit=threatmonitor-backup.service
+
+[Install]
+WantedBy=timers.target

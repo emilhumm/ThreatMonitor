@@ -1,0 +1,19 @@
+# /etc/systemd/system/threatmonitor-backup.service
+# Oneshot - fired by the matching .timer. Manual:
+#   sudo systemctl start threatmonitor-backup.service
+# Logs: journalctl -u threatmonitor-backup
+# A oneshot has no start timeout by default: a run that hangs would stay "activating" and block every later run.
+# Runs as uid 1000, the container's user and the owner of data/ and the share: nothing in it needs root, and a run
+# as root that died mid-way could leave root-owned history.db-wal / -shm files the container can't write to.
+
+[Unit]
+Description=ThreatMonitor - nightly history backup to an SMB share
+RequiresMountsFor=/mnt/threatmonitor-backup
+
+[Service]
+Type=oneshot
+User=1000
+ExecStart=/usr/local/bin/threatmonitor-backup-db.sh
+TimeoutStartSec=1h
+Nice=10
+IOSchedulingClass=idle

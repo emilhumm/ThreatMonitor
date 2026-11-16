@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+.venv313/
+.env
+data/
+.pytest_cache/
+.deploy.tar.gz
+.deploy.env
+VERSION
+
+# local pictures (screenshots, photos)
+*.jpg

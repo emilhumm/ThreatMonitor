@@ -1,0 +1,120 @@
+/* The History page: same night palette as the live dashboard, but a page that scrolls and is read, not a wall. */
+:root {
+  --bg: #070b18;
+  --bg-glow: #121a3a;
+  --panel: rgba(13, 19, 40, 0.42);
+  --panel-2: rgba(26, 34, 66, 0.4);
+  --line: rgba(160, 175, 255, 0.12);
+  --line-2: rgba(160, 175, 255, 0.2);
+  --ink: #e8ecf8;
+  --ink-2: #a3aecb;
+  --ink-3: #6f7a9c;
+  --block: #3ee0d0;
+  --ids: #ff5fd2;
+  --again: #c9b8ff;
+  --sans: "Mona Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: radial-gradient(ellipse at 50% 0%, var(--bg-glow) 0%, var(--bg) 62%) fixed, var(--bg);
+  color: var(--ink);
+  font: 14px/1.45 var(--sans);
+}
+#stars { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.page {
+  position: relative; z-index: 1;
+  max-width: 1500px; margin: 0 auto; padding: 22px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
+  display: grid; gap: 16px;
+}
+h1 { margin: 4px 0 2px; font-size: clamp(24px, 3vw, 32px); font-weight: 400; letter-spacing: -.01em; }
+h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.back { font-size: 12px; text-decoration: none; color: var(--ink-2); }
+.back:hover { color: var(--ink); }
+.note { margin: 0; color: var(--ink-3); font-size: 12px; }
+.top { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: flex-end; justify-content: space-between; }
+.range { display: inline-flex; border: 1px solid var(--line-2); border-radius: 999px; padding: 3px; background: var(--panel); }
+.range button { font: 500 13px var(--sans); color: var(--ink-2); background: none; border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.range button[aria-pressed="true"] { background: rgba(62, 224, 208, .12); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(62, 224, 208, .35); }
+button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--block); outline-offset: 2px; }
+.chart svg:focus-visible, .spark svg:focus-visible { border-radius: 4px; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 2px; min-width: 0; }
+.kpi .lab { color: var(--ink-2); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.kpi b { font-size: 30px; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.kpi small { color: var(--ink-3); font-size: 11px; }
+.sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; }
+.sw.block { background: var(--block); } .sw.ids { background: var(--ids); }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; min-width: 0; }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.hint { font-size: 12px; color: var(--ink-3); }
+.credit { margin: 0; font-size: 11px; color: var(--ink-3); }  /* DB-IP's licence (CC BY 4.0) asks for the link */
+.credit a { color: var(--ink-2); text-underline-offset: 2px; }
+.credit a:hover { color: var(--ink); }
+.chart { width: 100%; min-height: 230px; }
+.chart svg { display: block; width: 100%; height: 230px; overflow: visible; }
+.chart .gridlines line { stroke: var(--line); }
+.chart text { fill: var(--ink-3); font: 10px var(--mono); }
+.empty { color: var(--ink-3); padding: 18px 0; font-size: 13px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 12px; }
+.grid .wide { grid-column: 1 / -1; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font: 600 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); padding: 0 8px 6px; white-space: nowrap; }
+td { padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.dim { color: var(--ink-2); }
+td.trunc { max-width: 380px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+td.fill { max-width: 0; width: 100%; }  /* takes the leftover width and truncates, so the numbers stay in view */
+.bar { height: 3px; border-radius: 2px; background: var(--block); opacity: .75; margin-top: 4px; }
+.cc { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font: 600 9px var(--mono);
+      background: radial-gradient(circle at 35% 30%, #3a3f8f, #1b1f4a); border: 1px solid var(--line-2); margin-right: 8px; vertical-align: middle; }
+.ipbtn { font: 12px var(--mono); color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline dotted var(--ink-3); text-underline-offset: 3px; }
+.ipbtn:hover { color: var(--block); }
+.again { font: 600 10px var(--mono); color: var(--again); border: 1px solid rgba(201, 184, 255, .4); border-radius: 999px; padding: 0 6px; }
+.what { font: 10px var(--mono); color: var(--ink-2); border: 1px solid var(--line-2); border-radius: 999px; padding: 0 6px; white-space: nowrap; }
+
+/* what they were after, per day: a row per kind of knock, a small line each on its own scale */
+.trends .what-l { min-width: 190px; }
+.trends .what-l b { font-weight: 500; }
+.trends small { display: block; color: var(--ink-3); font-size: 11px; font-weight: 400; }
+.trends .amount { white-space: nowrap; font-variant-numeric: tabular-nums; width: 130px; }
+.trends td.spark { width: 300px; padding-left: 24px; }  /* the lines' own width (SPARK_W), so the dots stay round */
+.trends .spark svg { display: block; cursor: crosshair; }
+.trends td:last-child, .trends th:last-child { width: 170px; }
+.spark .area { fill: rgba(160, 175, 255, .1); }
+.spark .line { fill: none; stroke: var(--ink-2); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+.spark .end { fill: var(--ink); }
+.spark .today { fill: var(--bg); stroke: var(--ink-2); stroke-width: 1.2; }
+.spark .cross { stroke: var(--line-2); stroke-width: 1; }
+.trends .up { color: var(--ids); white-space: nowrap; } .trends .down { color: var(--block); white-space: nowrap; }
+.trends tr.sep td { border-top-color: var(--line-2); }
+
+.lookup-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.lookup-form input { flex: 1 1 240px; min-width: 0; font: 13px var(--mono); color: var(--ink); background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; }
+.lookup-form button { font: 600 13px var(--sans); color: #06201d; background: var(--block); border: 0; border-radius: 6px; padding: 8px 16px; cursor: pointer; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 10px 0 14px; }
+.facts div { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+.facts span { display: block; font-size: 11px; color: var(--ink-3); }
+.facts b { font-weight: 500; font-variant-numeric: tabular-nums; }
+.who { font: 600 18px var(--mono); }
+.who small { font: 13px var(--sans); color: var(--ink-2); margin-left: 8px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.cols h3 { margin: 0 0 6px; font: 600 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.mini svg { display: block; width: 100%; height: 70px; }
+.kind-ids { color: var(--ids); } .kind-block { color: var(--block); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+#say { top: 0; left: 0; margin: 0; }  /* the last thing on the page: placed where it adds no height */
+.tip {
+  position: fixed; z-index: 10; pointer-events: none; font-size: 12px; background: rgba(12, 16, 34, .96);
+  border: 1px solid var(--line-2); border-radius: 6px; padding: 6px 9px; color: var(--ink); white-space: nowrap;
+}
+.tip small { color: var(--ink-2); }

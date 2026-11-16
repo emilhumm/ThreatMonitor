@@ -1,0 +1,401 @@
+:root {
+  --bg: #070b18;
+  --bg-glow: #121a3a;
+  --panel-2: rgba(26, 34, 66, 0.34);
+  --line: rgba(160, 175, 255, 0.10);
+  --line-2: rgba(160, 175, 255, 0.18);
+  --ink: #e8ecf8;
+  --ink-2: #a3aecb;
+  --ink-3: #6b7699;
+  --block: #3ee0d0;       /* firewall blocks */
+  --ids: #ff5fd2;         /* IDS alerts */
+  --attack: #ff4f6d;      /* an attack the IDS recognised (a scan, an exploit), not just a listed sender */
+  --out: #ffb454;         /* outbound: a LAN device reached for a bad host */
+  --sans: "Mona Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }  /* beats any display: set on a class */
+html, body { margin: 0; height: 100%; }
+body {
+  background: radial-gradient(ellipse at 55% 45%, var(--bg-glow) 0%, var(--bg) 62%) fixed, var(--bg);
+  color: var(--ink);
+  font: 14px/1.35 var(--sans);
+  overflow: hidden;
+}
+#stars { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .01em; }
+button { font: inherit; color: inherit; }
+
+.wall {
+  position: relative; z-index: 1;
+  pointer-events: none;  /* drags fall through to the globe underneath, except on the cards and buttons below */
+  display: grid;
+  grid-template-columns: minmax(230px, 256px) minmax(0, 1fr) minmax(250px, 300px);
+  grid-template-rows: minmax(0, 1fr) 128px;
+  grid-template-areas: "left centre right" "left bottom bottom";  /* the left column runs the full height */
+  gap: 12px;
+  height: 100vh;
+  padding: 14px;
+  padding-left: calc(14px + var(--inset-left, 0px));  /* ?inset (js/shared.js): room for something laid over the left edge */
+}
+.col-left { grid-area: left; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.col-centre { grid-area: centre; position: relative; min-height: 0; }
+.col-right { grid-area: right; min-height: 0; }
+/* the bottom row lines up with the columns above it: Activity under the globe, Who’s Knocking under the stream (the
+   stream is 300px wide on any screen this layout is for; on a wide screen the row takes the columns themselves) */
+.bottom-row { grid-area: bottom; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; min-height: 0; }
+
+.tile, .col-right {  /* no card chrome: the whole wall is one starfield, held together by spacing and headings */
+  background: transparent;
+  border: 0;
+  padding: 14px 16px;
+}
+.tile-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.big { font-weight: 300; font-size: 44px; line-height: 1.05; margin-top: 6px; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.big.huge { font-size: clamp(40px, 4.4vw, 64px); }
+.sub { color: var(--ink-2); font-size: 12px; margin-top: 4px; }
+.c-block { color: var(--block); } .c-ids { color: var(--ids); } .c-attack { color: var(--attack); }
+.c-list { color: var(--ink); }  /* on a threat list: firewall and IDS lists alike, so neither one's colour */
+
+/* --- leaders --- */
+.leaders { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; margin-top: auto; }  /* runs to the foot of the column; shrinks on a short screen, and fitRows drops the rows that no longer fit */
+/* the top-8 list: quiet text tabs, one soft line per entry, and a faint bar for its size against #1 */
+.tabs { display: flex; gap: 14px; margin: 10px 0 8px; }
+.tabs button {
+  background: none; border: 0; border-bottom: 1px solid transparent; border-radius: 0; padding: 2px 0 3px;
+  color: #8a94b3; font-size: 12px; cursor: pointer;
+}
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--block); }
+.tabs button:hover { color: var(--ink); }
+.lead-list { list-style: none; margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column; flex: 0 1 auto; min-height: 0; }
+.lead-list li { padding: 4px 0 5px; }
+/* kept quiet next to the cards above: soft text, a hairline for each size, only the busiest row bright */
+.lead-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 38px; align-items: baseline; gap: 8px; }
+.lead-code { font: 11px var(--mono); color: #5f6989; }
+.lead-label { font-size: 13px; color: #b4bcd6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lead-n { font-size: 13px; color: #a3aecb; text-align: right; font-variant-numeric: tabular-nums; }
+.lead-list li:first-child :is(.lead-label, .lead-n) { color: var(--ink); }
+/* what an address was doing (scanner, sweep, botnet, brute), after it */
+.lead-label .what { margin-left: 6px; padding: 0 5px; font-size: 9.5px; line-height: 12px; color: #8a94b3;
+  border: 1px solid rgba(160, 175, 255, .2); border-radius: 999px; vertical-align: 1px; }
+.lead-track { margin-top: 4px; height: 1px; }
+.lead-track > div { height: 1px; background: rgba(160, 175, 255, .24); }
+.lead-empty { color: #8a94b3; font-size: 12px; }
+
+/* --- centre --- */
+.headline .sub b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.vs { margin-top: 5px; font-size: 12px; color: var(--ink-3); }  /* today so far against yesterday by this time */
+.vs b { font-weight: 500; font-variant-numeric: tabular-nums; }
+.vs .down { color: var(--block); } .vs .up { color: var(--ids); }
+.brand { position: absolute; top: 6px; right: 6px; z-index: 2; display: flex; align-items: center; gap: 10px; }
+.status {
+  display: inline-flex; align-items: center; gap: 6px; font: 600 11px var(--mono); letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-2); border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 9px;
+  background: rgba(10, 14, 30, .6);
+}
+.status i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
+.status.live i { background: #39d353; }
+.status.live { color: #8ff0a4; }
+.status.demo i { background: var(--out); }
+.status.demo { color: var(--out); }
+.status.wait i { background: var(--out); }
+.status.down i { background: #f85149; }
+.status.down { color: #ff8b84; }
+.warn {
+  position: absolute; top: 40px; right: 6px; z-index: 3; max-width: min(460px, 70%); display: grid; gap: 6px;
+  font-size: 12px; line-height: 1.4; color: #ffc9c4;
+}
+.warn div {
+  background: rgba(60, 14, 18, .88); border: 1px solid rgba(248, 81, 73, .55); border-radius: 6px; padding: 8px 10px 8px 30px;
+  position: relative; box-shadow: 0 0 18px rgba(248, 81, 73, .18);
+}
+.warn div::before {
+  content: "!"; position: absolute; left: 9px; top: 8px; width: 14px; height: 14px; border-radius: 50%;
+  background: #f85149; color: #1a0506; font: 700 10px/14px var(--mono); text-align: center;
+}
+/* the globe's canvas fills the whole page under the cards, so it has room to fly in (the camera keeps it centred on
+   the centre column: fitGlobe in js/globe.js); on narrow screens it goes back inside its column */
+#globe { position: fixed; inset: 0; z-index: -1; cursor: grab; pointer-events: auto; }
+.tile, .col-right, .brand, .warn, .globe-ctl, .settings { pointer-events: auto; }
+#globe:active { cursor: grabbing; }
+.globe-ctl { position: absolute; right: 8px; bottom: 6px; z-index: 2; display: flex; align-items: center; gap: 6px; }
+.globe-ctl button {
+  width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line-2); background: rgba(10, 14, 30, .6);
+  display: grid; place-items: center; cursor: pointer; color: var(--ink-2); padding: 0;
+}
+.globe-ctl button:hover { color: var(--ink); border-color: var(--ink-3); }
+.globe-ctl svg { width: 12px; height: 12px; }
+.globe-ctl button[aria-expanded="true"] { color: var(--block); border-color: rgba(62, 224, 208, .55); }
+
+/* settings: the gear by the globe's buttons opens one small popup (place names, the tour and how often, the cards) */
+.settings {
+  position: absolute; right: 8px; bottom: 40px; z-index: 3; width: 272px; max-height: calc(100% - 48px); overflow-y: auto;
+  padding: 12px 0 0; background: rgba(10, 14, 30, .97); backdrop-filter: blur(8px);  /* place names don't show through */
+  border: 1px solid var(--line-2); border-radius: 12px; box-shadow: 0 10px 34px rgba(0, 0, 0, .5);
+  font-size: 13px; color: var(--ink-2);
+}
+.set-head { display: flex; align-items: center; justify-content: space-between; padding: 0 8px 8px 14px; }
+.settings h3 { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
+.set-head button {
+  width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: none; cursor: pointer;
+  display: grid; place-items: center; color: var(--ink-3);
+}
+.set-head button:hover { color: var(--ink); background: var(--panel-2); }
+.set-head button:focus-visible { outline: 2px solid var(--block); outline-offset: 1px; }
+.set-head svg { width: 10px; height: 10px; }
+.settings section { padding: 8px 14px 6px; border-top: 1px solid var(--line); }
+.settings h4 { margin: 0 0 4px; font: 600 10.5px var(--sans); letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
+.settings .opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; color: var(--ink); cursor: pointer; }
+.settings .opt small { display: block; max-width: 190px; font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
+.settings input[role="switch"] {
+  appearance: none; flex: none; margin: 0; width: 30px; height: 17px; border-radius: 999px; cursor: pointer;
+  background: radial-gradient(circle 6.5px at 8.5px 50%, var(--ink-2) 92%, transparent), rgba(160, 175, 255, .16);
+}
+.settings input[role="switch"]:checked { background: radial-gradient(circle 6.5px at 21.5px 50%, #eafffb 92%, transparent), rgba(62, 224, 208, .55); }
+.settings input:focus-visible { outline: 2px solid var(--block); outline-offset: 2px; }
+.times { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin: 4px 0; padding: 2px; border: 1px solid var(--line-2); border-radius: 8px; }
+.times.three { grid-template-columns: repeat(3, 1fr); }
+.times.two { grid-template-columns: repeat(2, 1fr); }
+.settings .set-note { margin: 2px 0 4px; font-size: 11.5px; color: var(--out); }  /* Fancy dropped: the screen ran slow */
+/* the parts of Fancy, hung under the Graphics choice */
+.settings .sub-opts { margin: 4px 0 6px 6px; padding-left: 10px; border-left: 1px solid var(--line-2); }
+.settings .sub-opts .opt { padding: 3px 0; font-size: 12.5px; color: var(--ink-2); }
+.settings .sub-opts .opt:has(input:checked) { color: var(--ink); }
+.settings .opt.static { cursor: default; padding-bottom: 0; }
+.times label { position: relative; }
+.times input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.times span { display: block; padding: 3px 0; border-radius: 6px; text-align: center; font-size: 12px; color: var(--ink-2); }
+.times label:hover span { color: var(--ink); }
+.times input:checked + span { background: rgba(62, 224, 208, .14); color: var(--block); }
+.times input:focus-visible + span { outline: 2px solid var(--block); outline-offset: 1px; }
+.times input:disabled { cursor: default; }
+.times input:disabled + span { opacity: .4; color: var(--ink-2); }  /* the tour is off */
+.card-list label { display: flex; align-items: center; gap: 9px; padding: 4px 0; color: var(--ink-2); cursor: pointer; }
+.card-list label:has(input:checked) { color: var(--ink); }
+.card-list input {
+  appearance: none; flex: none; margin: 0; width: 14px; height: 14px; border: 1px solid var(--ink-3); border-radius: 4px; cursor: pointer;
+}
+.card-list input:checked {
+  border-color: var(--block); background: rgba(62, 224, 208, .16) center / 9px no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 5.2 4.2 7.3 8 3' fill='none' stroke='%233ee0d0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.settings .foot { margin: 2px 0 0; padding: 8px 14px 9px; border-top: 1px solid var(--line); font-size: 11px; color: var(--ink-3); }
+.settings .foot .credit { display: block; margin-top: 3px; }  /* DB-IP's licence (CC BY 4.0) asks for the link */
+.settings .foot a { color: var(--ink-2); text-underline-offset: 2px; }
+.settings .foot a:hover { color: var(--ink); }
+/* labels floating at the busiest places */
+.glabel { pointer-events: none; width: 0; height: 0; transition: opacity .6s; }
+.glabel > div {
+  position: absolute; left: 6px; bottom: 6px; padding: 0 0 6px 6px; white-space: nowrap;
+  font: 10px var(--mono); color: rgba(220, 228, 255, .78); border-left: 1px solid rgba(220, 228, 255, .35);
+  text-shadow: 0 0 4px #070b18, 0 0 2px #070b18;
+}
+.glabel b { font-weight: 600; color: var(--ink); }
+
+/* --- stream --- */
+.col-right { display: flex; flex-direction: column; padding: 14px 12px 8px 16px; }
+.stream-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.clock { display: flex; gap: 8px; font: 11px var(--mono); color: var(--ink-2); }
+.clock span:last-child { color: var(--block); }
+.stream-pause { font-size: 11px; color: var(--out); margin-top: 8px; }
+.stream { list-style: none; margin: 12px 0 0; padding: 0 0 0 16px; position: relative; overflow: hidden; flex: 1; min-height: 0; }
+.stream::before { content: ""; position: absolute; left: 3px; top: 4px; bottom: 0; width: 1px; background: linear-gradient(var(--line-2), transparent); }
+.stream li { position: relative; padding: 0 0 12px 4px; font: 11px/1.45 var(--mono); color: var(--ink-2); animation: slidein .45s ease; }
+.stream li::before {
+  content: ""; position: absolute; left: -16px; top: 4px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--k, var(--block)); box-shadow: 0 0 6px var(--k, var(--block));
+}
+.stream li.ids { --k: var(--ids); } .stream li.attack { --k: var(--attack); } .stream li.out { --k: var(--out); }
+/* a knock both logged: blocked by the firewall and flagged by the IDS */
+.stream li.both::before { background: linear-gradient(90deg, var(--block) 50%, var(--ids) 50%); box-shadow: 0 0 6px var(--ids); }
+.stream li.both:is(.attack, .atk)::before { background: linear-gradient(90deg, var(--block) 50%, var(--attack) 50%); box-shadow: 0 0 6px var(--attack); }
+.stream .ev { color: var(--ink); font-weight: 600; }
+.stream .ev .tag { color: var(--k, var(--block)); }
+.stream .meta { color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stream .sig { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stream .where { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stream .cnt { float: right; color: var(--k, var(--block)); font-weight: 600; }
+.stream li.bump { animation: bump .5s ease; }
+
+/* --- bottom --- */
+.bottom { display: flex; flex-direction: column; padding-block: 11px; }
+.b2 { grid-column: 1 / -2; } .b3 { grid-column: -2 / -1; }  /* Networks the last column, Activity the rest; each keeps its place when the other is hidden */
+/* Blocks · Alerts, under the headline it breaks down: the three counts stacked, right-aligned so the digits line up */
+.b1 { flex: none; padding-block: 12px 0; }
+.of-total { font-size: 12px; color: var(--ink-3); margin: 3px 0 -2px; }  /* the rows are parts of it, overlapping */
+.pair { display: grid; grid-template-columns: max-content 1fr; column-gap: 12px; align-items: baseline; margin-top: 6px; }
+.pair > div { display: contents; }
+.pair small { font-size: 12px; color: var(--ink-2); }
+.num { font-size: 24px; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1.12; text-align: right; }
+/* activity: one bar per minute for the last hour; firewall blocks in teal under IDS alerts in pink, nearly full colour */
+.act-total { font-size: 11px; color: var(--ink-3); }
+.act-total b { color: var(--ink-2); font-weight: 500; font-variant-numeric: tabular-nums; }
+.mbars { height: 44px; margin-top: auto; display: flex; gap: 3px; border-bottom: 1px solid rgba(160, 175, 255, .12); }
+.mbars .m { flex: 1 1 0; min-width: 0; display: flex; align-items: flex-end; }  /* full height, so a short bar is still easy to hover */
+.mbars i {
+  width: 100%; height: 0; border-radius: 1.5px 1.5px 0 0; --p: 100%;
+  background: linear-gradient(to top, rgba(62, 224, 208, .75) 0 var(--p), rgba(255, 95, 210, .75) var(--p) 100%);
+}
+.mbars .m:hover i { filter: brightness(1.6); }
+.mticks { position: relative; height: 13px; margin-top: 4px; font-size: 10px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.mticks span { position: absolute; transform: translateX(-50%); }
+/* two shares of the day's threats side by side: from the companies that scan the whole internet, and from addresses
+   back from an earlier day; each a number, a thin bar for the share, and who */
+.shares { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: auto; }
+.share-big { font-weight: 300; font-size: 32px; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.share-bar { height: 2px; margin: 9px 0 7px; background: rgba(160, 175, 255, .14); }
+.share-bar i { display: block; height: 100%; background: rgba(160, 175, 255, .6); }
+.share-sub { font-size: 11px; line-height: 15px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.share-sub span { display: block; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; }
+
+/* --- tooltip --- */
+.tip {
+  position: fixed; z-index: 10; pointer-events: none; font-size: 12px; background: rgba(12, 16, 34, .96);
+  border: 1px solid var(--line-2); border-radius: 6px; padding: 6px 9px; color: var(--ink); white-space: nowrap;
+}
+.tip small { color: var(--ink-2); }
+.tip .tipw { white-space: normal; width: 290px; line-height: 1.45; }  /* a few lines of explanation, not one */
+.tip .tipw p { margin: 4px 0 0; }
+.pair [data-tip] > * { cursor: help; }
+
+@keyframes slidein { from { opacity: 0; transform: translateY(-8px); } }
+@keyframes bump { 30% { background: rgba(255, 255, 255, .04); } }
+
+/* narrow screens: everything stacks, globe first */
+@media (max-width: 1100px) {
+  body { overflow: auto; }
+  /* Threats Detected and Blocks · Alerts above the globe, so on a phone the three fit on one screen; Top Sources after
+     the stream. The left column's cards join the page's own column for that (display: contents), placed by order, so
+     a hidden card leaves no gap */
+  .wall {
+    height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; padding: 12px 16px;
+    padding-left: calc(16px + var(--inset-left, 0px));
+    grid-template-areas: none;
+  }
+  .col-left { display: contents; }
+  .wall > *, .col-left > * { grid-area: auto; }
+  /* the two close to each other and to the top (12px between them rather than 38), so the globe's buttons stay on the
+     screen with Safari's bars out, a larger text size or page zoom */
+  .headline { order: 1; padding-block: 2px 0; }
+  .b1 { order: 2; padding-top: 0; }
+  .col-centre { order: 3; }
+  .col-right { order: 4; }
+  .leaders { order: 5; }
+  .bottom-row { order: 6; }
+  /* the globe's box takes the rest of the screen under those cards, at least 260px (js/globe.js measures --globe-top and
+     the screen's height, --view-h; 72vh without them), and runs to the screen's edges (into the page's side padding), so beams and their glow
+     aren't cut off in a hard line 16px in; what sits in its corners moves in by the same, so it stays where it was */
+  .col-centre {
+    height: 72vh; height: max(260px, calc(var(--view-h, 100svh) - var(--globe-top, 0px) - 12px)); min-height: 0;
+    margin-inline: -16px;
+  }
+  .brand, .warn { right: 22px; }
+  .globe-ctl, .settings { right: 24px; }
+  /* the buttons a little up from the screen's foot, out among the stars, clear of a phone's rounded corner and home bar;
+     the settings open above them as before */
+  .globe-ctl { bottom: 18px; }
+  .settings { bottom: 52px; }
+  .lower { left: calc(16px + 2%); }
+  #globe { position: absolute; z-index: auto; }
+  .col-right { height: 60vh; }
+  .bottom-row { grid-template-columns: minmax(0, 1fr); }
+  .b2, .b3 { grid-column: auto; }
+  .bottom { min-height: 120px; }
+}
+
+/* history: ↻ marks an address seen on earlier days; the clock button opens the History page */
+.again {
+  font: 600 10px var(--mono); color: #c9b8ff; border: 1px solid rgba(201, 184, 255, .4); border-radius: 999px;
+  padding: 0 5px; white-space: nowrap;
+}
+.hist {
+  width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line-2); background: rgba(10, 14, 30, .6);
+  display: grid; place-items: center; color: var(--ink-2);
+}
+.hist:hover { color: var(--ink); border-color: var(--ink-3); }
+.hist svg { width: 13px; height: 13px; }
+
+/* tour: letterbox bars and a TV-style caption while the camera visits a threat */
+.ov { position: absolute; pointer-events: none; }
+.letterbox { inset: 0; z-index: 1; overflow: hidden; }  /* the bars wait just outside, clipped */
+.letterbox::before, .letterbox::after { content: ""; position: absolute; left: 0; right: 0; height: 8%; background: #02040b; transition: transform .9s ease; }
+.letterbox::before { top: 0; transform: translateY(-100%); }
+.letterbox::after { bottom: 0; transform: translateY(100%); }
+.letterbox.on::before, .letterbox.on::after { transform: none; }
+@media (min-width: 1101px) {
+  .letterbox { display: none; }  /* bars at the column's edges would cut the full-page globe again */
+  /* the globe still reaches under the cards, but fades towards the edges so their text stays readable over it
+     (::after comes after the globe in the page, so at the same z-index it lies on top of it, and under the cards) */
+  .wall {
+    /* as dark on the left as on the other edges (it was 30%: the globe seldom reaches under that column, but the
+       sky's Milky Way and stars do) */
+    --fade-left: linear-gradient(to right, rgba(7, 11, 24, .6) 0 calc(230px + var(--inset-left, 0px)),
+                                 rgba(7, 11, 24, 0) calc(360px + var(--inset-left, 0px)));  /* follows the column in (?inset) */
+    --fade-right: linear-gradient(to left, rgba(7, 11, 24, .6) 0 270px, rgba(7, 11, 24, 0) 400px);
+    --fade-bottom: linear-gradient(to top, rgba(7, 11, 24, .6) 0 110px, rgba(7, 11, 24, 0) 190px);
+  }
+  /* the wall carries a hide-<card> class for each card hidden (js/panels.js) */
+  .wall.hide-threats.hide-blocks.hide-leaders { --fade-left: none; }  /* every card on that side hidden: no text to keep readable there */
+  .wall.hide-stream { --fade-right: none; }
+  .wall.hide-activity.hide-networks { --fade-bottom: none; }
+  .wall::after {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: var(--fade-left), var(--fade-right), var(--fade-bottom);
+  }
+  @supports (grid-template-columns: subgrid) { .bottom-row { grid-template-columns: subgrid; } }
+  /* Activity sits between the left column, whose list ends 30px short of the column, and Who's Knocking, which
+     starts at its card's edge: moved 7px left so the space on either side of it is the same */
+  .b2 { padding-left: 9px; padding-right: 23px; }
+  /* Activity takes over the space a hidden neighbour leaves. Without Top Sources the bottom row runs the full width,
+     into the foot of the left column; Who’s Knocking stays under the stream */
+  .wall.hide-leaders { grid-template-areas: "left centre right" "bottom bottom bottom"; }
+  .wall.hide-networks .b2 { grid-column: 1 / -1; }
+  /* With Activity or Who’s Knocking hidden, the stream runs down to the foot of the page and the other one has the
+     rest of the bottom row (unless the stream is hidden too: then the rules above apply) */
+  .wall:not(.hide-stream):is(.hide-activity, .hide-networks) { grid-template-areas: "left centre right" "left bottom right"; }
+  .wall.hide-leaders:not(.hide-stream):is(.hide-activity, .hide-networks) { grid-template-areas: "left centre right" "bottom bottom right"; }
+  .wall:not(.hide-stream):is(.hide-activity, .hide-networks) .bottom-row { grid-template-columns: minmax(0, 1fr); }
+  .wall:not(.hide-stream):is(.hide-activity, .hide-networks) :is(.b2, .b3) { grid-column: 1 / -1; }
+  .tile, .col-right, .globe-ctl { text-shadow: 0 0 4px rgba(7, 11, 24, .9), 0 0 10px rgba(7, 11, 24, .7); }  /* letters stand off a beam behind them */
+  /* Simplest (js/globe.js): a crisp dark outline instead of that haze. Blurring the letters again whenever a card
+     changed cost a mid-range wall tablet a stutter about once a second; the outline costs next to nothing */
+  html.simplest :is(.tile, .col-right, .globe-ctl) {
+    text-shadow: 1px 0 0 rgba(7, 11, 24, .9), -1px 0 0 rgba(7, 11, 24, .9), 0 1px 0 rgba(7, 11, 24, .9), 0 -1px 0 rgba(7, 11, 24, .9);
+  }
+}
+.lower {
+  z-index: 2; left: 2%; bottom: 12%; max-width: min(540px, 80%); padding: 14px 18px 14px 16px; border-left: 3px solid var(--block);
+  background: linear-gradient(90deg, rgba(6, 10, 24, .92), rgba(6, 10, 24, .7)); border-radius: 0 8px 8px 0;
+  opacity: 0; transform: translateX(-24px); transition: opacity .6s ease, transform .6s ease;
+}
+.lower.on { opacity: 1; transform: none; }
+.lower.ids { border-left-color: var(--ids); } .lower.attack { border-left-color: var(--attack); }
+.lower .kick { display: flex; gap: 8px; align-items: center; font: 600 10px var(--mono); letter-spacing: .14em; color: var(--ink-2); }
+.lower .kick span:first-child { background: var(--block); color: #04141a; padding: 2px 7px; border-radius: 3px; }
+.lower.ids .kick span:first-child { background: var(--ids); } .lower.attack .kick span:first-child { background: var(--attack); }
+.lower.attack .sig { color: var(--attack); }
+.lower .big { font: 600 clamp(22px, 2.4vw, 34px) var(--mono); margin-top: 4px; }
+.lower .sub { color: var(--ink-2); font-size: 14px; }
+.lower .facts { margin-top: 6px; font: 12px var(--mono); color: var(--ink-2); }
+.lower .facts b { color: var(--ink); }
+.lower .sig { margin-top: 4px; font: 11px var(--mono); color: var(--ids); }
+
+/* shield impacts: a small tag that pops up over home */
+.hittag { pointer-events: none; width: 0; height: 0; }
+.hittag > div {
+  position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); white-space: nowrap; font: 700 10px var(--mono);
+  letter-spacing: .14em; padding: 3px 8px; border-radius: 4px; color: #06131a; animation: tagUp 1.2s ease-out forwards;
+}
+@keyframes tagUp {
+  0% { opacity: 0; transform: translate(-50%, 6px) scale(.9); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -14px); }
+}
+@media (prefers-reduced-motion: reduce) { .hittag > div { animation: none; } }
+
+/* the left column is narrow: a little less side padding */
+.col-left .tile { padding-inline: 12px; }
+/* the list ends where the cards above it do, not at the column's edge */
+.col-left .leaders { padding-right: 30px; }

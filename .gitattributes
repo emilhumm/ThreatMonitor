@@ -1,0 +1,6 @@
+# everything is deployed to Linux straight from this working copy (deploy.sh), so keep LF even on Windows
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.mmdb binary
+*.woff2 binary

@@ -1,0 +1,12 @@
+# Pinned to what the image has (pip freeze in the container, 2026-11-05), so a rebuild can't bring a different
+# aiohttp. To move on: change the versions here, run the tests, then `bash deploy.sh --build`.
+aiohttp==3.14.5
+aiohappyeyeballs==2.7.1
+aiosignal==1.4.0
+attrs==26.1.0
+frozenlist==1.8.0
+idna==3.20
+multidict==7.2.1
+propcache==0.5.4
+yarl==1.25.1
+maxminddb==3.2.0
